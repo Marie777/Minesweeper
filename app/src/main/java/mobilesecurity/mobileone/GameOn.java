@@ -1,10 +1,13 @@
 package mobilesecurity.mobileone;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.GridView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,6 +19,7 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
 
     private int n = 10;
     private int numberOfMines = 0;
+    private int level;
 
     private TimerThread timerThread;
     private FieldAdapter fieldAdapter;
@@ -27,10 +31,15 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
 
         setContentView(R.layout.activity_game_on);
 
-        gridView = (GridView)findViewById(R.id.grid);
-        //gridView.setLayoutParams(new GridView.LayoutParams(80,80));
+        //gridView = (GridView)findViewById(R.id.grid);
 
-        int level = this.getIntent().getIntExtra("level", 0);
+        LinearLayout mainLayout = (LinearLayout) findViewById(R.id.ll);
+        gridView = new GridView(this);
+        gridView.setGravity(Gravity.CENTER);
+
+
+
+        level = this.getIntent().getIntExtra("level", 0);
 
         switch (level) {
             case 0:
@@ -44,8 +53,11 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
             case 2:
                 n = 5;
                 numberOfMines = 10;
+                gridView.setLayoutParams(new GridView.LayoutParams(n*100,n*100));
                 break;
         }
+
+        mainLayout.addView(gridView,0);
 
 
         gridView.setNumColumns(n);
@@ -128,6 +140,7 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
 
         if(minesweeperButton.isMine()) {
             Toast.makeText(this, "Game Over", Toast.LENGTH_SHORT).show();
+            endGameIntent(false, timerThread.getCurrentTime());
             return;
         }
 
@@ -138,9 +151,21 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
             if(isWin()) {
                 Toast.makeText(this, "You won!", Toast.LENGTH_SHORT).show();
                 timerThread.setFinished(true);
+                endGameIntent(true, timerThread.getCurrentTime());
             }
         }
     }
+
+    private void endGameIntent(boolean isWin, int time){
+        Intent intent = new Intent(this,GameOver.class);
+        intent.putExtra("isWin", isWin);
+        intent.putExtra("level", level);
+        intent.putExtra("time", time);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY| Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+        startActivity(intent);
+    }
+
+
 
     private void bfsReveal(MinesweeperButton minesweeperButton){
 

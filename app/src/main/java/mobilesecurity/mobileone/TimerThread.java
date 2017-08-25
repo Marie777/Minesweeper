@@ -36,4 +36,9 @@ class TimerThread extends Thread {
             }
         }
     }
+
+    public int getCurrentTime(){
+        return currentTime;
+    }
+
 }

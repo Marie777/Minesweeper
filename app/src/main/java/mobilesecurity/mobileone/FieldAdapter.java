@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.GridView;
 
 class FieldAdapter extends BaseAdapter {
     private int size;
@@ -48,6 +49,11 @@ class FieldAdapter extends BaseAdapter {
 
         MinesweeperButton btn = new MinesweeperButton(ctx, x, y, mineMap[x][y]);
 
+        btn.setLayoutParams(new GridView.LayoutParams(100,100));
+
+        //btn.setPadding(0,0,0,0);
+        //btn.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,0,0);
+        //btn.setPaddingRelative(0,0,0,0);
         btn.setText(isMine ? "*" : "");
 
         btn.setOnClickListener(clickListener);
