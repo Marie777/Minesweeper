@@ -10,36 +10,55 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class GameOn extends AppCompatActivity implements View.OnClickListener, View.OnLongClickListener {
-
-    private static final int N = 10;
     private static final String TAG = "btn";
 
-    private TimerThread timerThread;
+    private int n = 10;
+    private int numberOfMines = 0;
 
+    private TimerThread timerThread;
     private FieldAdapter fieldAdapter;
+    private GridView gridView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_game_on);
 
-        GridView gridView = (GridView)findViewById(R.id.grid);
-        gridView.setBackgroundColor(1);
+        gridView = (GridView)findViewById(R.id.grid);
+        //gridView.setLayoutParams(new GridView.LayoutParams(80,80));
 
-        gridView.setNumColumns(N);
+        int level = this.getIntent().getIntExtra("level", 0);
 
-        boolean[][] mineMap = new boolean[N][N];
+        switch (level) {
+            case 0:
+                n = 10;
+                numberOfMines = 5;
+                break;
+            case 1:
+                n = 10;
+                numberOfMines = 10;
+                break;
+            case 2:
+                n = 5;
+                numberOfMines = 10;
+                break;
+        }
 
-        for(int i = 0; i < 0; i++) {
-            int x = (int)Math.floor((Math.random() * N));
-            int y = (int)Math.floor((Math.random() * N));
+
+        gridView.setNumColumns(n);
+
+        boolean[][] mineMap = new boolean[n][n];
+
+        for(int i = 0; i < numberOfMines; i++) {
+            int x = (int)Math.floor((Math.random() * n));
+            int y = (int)Math.floor((Math.random() * n));
             mineMap[x][y] = true;
         }
 
-        fieldAdapter = new FieldAdapter(this, N, this, this, mineMap);
+        fieldAdapter = new FieldAdapter(this, n, this, this, mineMap);
 
         gridView.setAdapter(fieldAdapter);
         TextView timer = (TextView) findViewById(R.id.timer);
@@ -59,17 +78,9 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
         if(v instanceof MinesweeperButton) {
             MinesweeperButton minesweeperButton = (MinesweeperButton) v;
 
-            reveal(minesweeperButton);
-
-            Toast.makeText(
-                    this,
-                    String.format(
-                            Locale.ENGLISH,
-                            "(%d, %d) - %s",
-                            minesweeperButton.getMyX(),
-                            minesweeperButton.getMyY(),
-                            minesweeperButton.isMine() ? "Mine" : "Not mine"),
-                    Toast.LENGTH_SHORT).show();
+            if(!minesweeperButton.isFlagged()) {
+                reveal(minesweeperButton);
+            }
         }
     }
 
@@ -79,26 +90,20 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
 
         List<MinesweeperButton> adjButtons = new ArrayList<>();
         int minX = x > 0 ? x - 1 : x;
-        int maxX = x < N - 1 ? x + 1 : x;
+        int maxX = x < n - 1 ? x + 1 : x;
         int minY = y > 0 ? y - 1 : y;
-        int maxY = y < N - 1 ? y + 1 : y;
+        int maxY = y < n - 1 ? y + 1 : y;
 
         Log.d(TAG, "minX " + minX + " maxX " + maxX);
         Log.d(TAG, "minY " + minY + " maxY " + maxY);
 
         for(int i = minX; i <= maxX; i++) {
             for(int j = minY; j <= maxY; j++) {
-                adjButtons.add((MinesweeperButton) fieldAdapter.getItem(i + j * N));
+                adjButtons.add((MinesweeperButton) fieldAdapter.getItem(i + j * n));
             }
         }
 
         Log.d(TAG, "List size " + adjButtons.size());
-
-        MinesweeperButton t = (MinesweeperButton)fieldAdapter.getItem(0);
-
-        t.setText("B");
-
-        Log.d(TAG, t.getText().toString());
 
         return adjButtons;
     }
@@ -125,24 +130,29 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
             Toast.makeText(this, "Game Over", Toast.LENGTH_SHORT).show();
             return;
         }
-        bfsReveal(minesweeperButton);
+
+        if(!minesweeperButton.isFlagged()) {
+            bfsReveal(minesweeperButton);
+            gridView.refreshDrawableState();
+
+            if(isWin()) {
+                Toast.makeText(this, "You won!", Toast.LENGTH_SHORT).show();
+                timerThread.setFinished(true);
+            }
+        }
     }
 
     private void bfsReveal(MinesweeperButton minesweeperButton){
 
-        if(!minesweeperButton.isRevealed()){
+        if(!minesweeperButton.isRevealed() && !minesweeperButton.isFlagged()){
             int countM = getMineCount(minesweeperButton);
             minesweeperButton.setText(String.valueOf(countM));
             minesweeperButton.setRevealed(true);
             if(countM==0){
                 List<MinesweeperButton> adjButtons = getAdj(minesweeperButton);
-                for(int i = 0; i < adjButtons.size(); i++) {
-                    adjButtons.get(i).setText("A");
+                for (MinesweeperButton btn: adjButtons) {
+                    bfsReveal(btn);
                 }
-//                for (MinesweeperButton btn: adjButtons) {
-//
-//                    //bfsReveal(btn);
-//                }
             }
         }
     }
@@ -151,78 +161,25 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
     public boolean onLongClick(View v) {
         if(v instanceof MinesweeperButton) {
             MinesweeperButton minesweeperButton = (MinesweeperButton) v;
-            Toast.makeText(
-                    this,
-                    String.format(
-                            Locale.ENGLISH,
-                            "Long: (%d, %d) - %s",
-                            minesweeperButton.getMyX(),
-                            minesweeperButton.getMyY(),
-                            minesweeperButton.isMine() ? "Mine" : "Not mine"),
-                    Toast.LENGTH_SHORT).show();
+
+            if(!minesweeperButton.isRevealed()) {
+                minesweeperButton.setFlagged(!minesweeperButton.isFlagged());
+            }
+
             return true;
         }
         return false;
     }
+
+    private boolean isWin() {
+        int revealedCount = 0;
+        for(int i = 0; i < fieldAdapter.getCount(); i++) {
+            MinesweeperButton tile = (MinesweeperButton) fieldAdapter.getItem(i);
+            if(tile.isRevealed()) {
+                revealedCount++;
+            }
+        }
+
+        return n * n - numberOfMines == revealedCount;
+    }
 }
-
-      /*
-
-        RelativeLayout myLayout = new RelativeLayout(this);
-        LinearLayout.LayoutParams param =
-                new LinearLayout.LayoutParams(sizeP, sizeP);
-
-        final Button[][] btns = new Button[n][n];
-        final Button[][] btns2 = new Button[n][n];
-        Random rand = new Random();
-        int countMines = 0;
-
-        for(j = 0; j < n ; j++) {
-            for (i = 0; i < n; i++) {
-                btns2[i][j] = new Button(this);
-                btns2[i][j].setId(i*10+j);
-                btns2[i][j].setLayoutParams(param);
-                btns2[i][j].setX(i + j*sizeP);
-                btns2[i][j].setY(sizeP * i);
-
-                if(rand.nextInt(n/5 + 2)==0 && countMines < MaxMines) {
-                    btns2[i][j].setText("*");
-                    countMines++;
-                }else{
-                    btns2[i][j].setText("F");
-                }
-
-                myLayout.addView(btns2[i][j]);
-            }
-        }
-
-
-        for(j = 0; j < n ; j++) {
-            for (i = 0; i < n; i++) {
-                btns[i][j] = new Button(this);
-                btns[i][j].setId(i*10+j);
-                btns[i][j].setLayoutParams(param);
-                btns[i][j].setX(i + j*sizeP);
-                btns[i][j].setY(sizeP * i);
-                btns[i][j].setText(i + "" + j);
-                btns[i][j].setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        v.setVisibility(View.INVISIBLE);
-
-
-                        int ii = v.getId()/10;
-                        int jj = v.getId()%10;
-
-                        //if(btns2[ii][jj].getText().equals("*")) {
-                         //   Log.i(TAG, "Game over");
-                        //}
-                    }
-                });
-                myLayout.addView(btns[i][j]);
-            }
-        }
-
-
-        setContentView(myLayout);
-*/

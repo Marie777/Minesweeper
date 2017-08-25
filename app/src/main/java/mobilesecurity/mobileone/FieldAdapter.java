@@ -4,7 +4,6 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.GridView;
 
 class FieldAdapter extends BaseAdapter {
     private int size;
@@ -54,12 +53,6 @@ class FieldAdapter extends BaseAdapter {
         btn.setOnClickListener(clickListener);
         btn.setOnLongClickListener(longClickListener);
 
-        buttons[position] = btn;
-
-        if(position== 0) {
-            btn.setText("s");
-        }
-
-        return btn;
+        return buttons[position] = btn;
     }
 }

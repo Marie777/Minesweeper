@@ -8,6 +8,7 @@ class MinesweeperButton extends AppCompatButton {
     private int y;
     private boolean isMine;
     private boolean isRevealed = false;
+    private boolean isFlagged = false;
 
     public MinesweeperButton(Context context, int x, int y, boolean isMine) {
         super(context);
@@ -36,4 +37,12 @@ class MinesweeperButton extends AppCompatButton {
         this.isRevealed = isRevealed;
     }
 
+    public boolean isFlagged() {
+        return isFlagged;
+    }
+
+    public void setFlagged(boolean flagged) {
+        setText(flagged ? "F" : "");
+        isFlagged = flagged;
+    }
 }
