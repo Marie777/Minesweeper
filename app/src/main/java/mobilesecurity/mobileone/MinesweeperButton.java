@@ -4,7 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.support.v7.widget.AppCompatButton;
 
-class MinesweeperButton extends AppCompatButton implements Cell {
+class MinesweeperButton extends AppCompatButton {
     private int x;
     private int y;
     private boolean isMine;
