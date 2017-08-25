@@ -5,7 +5,7 @@ import android.widget.TextView;
 
 class TimerThread extends Thread {
     private TextView view;
-    private int currentTime;
+    private int currentTime = 0;
     private boolean isFinished;
     private Activity activity;
 

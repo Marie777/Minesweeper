@@ -1,9 +1,10 @@
 package mobilesecurity.mobileone;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.support.v7.widget.AppCompatButton;
 
-class MinesweeperButton extends AppCompatButton {
+class MinesweeperButton extends AppCompatButton implements Cell {
     private int x;
     private int y;
     private boolean isMine;
@@ -33,8 +34,12 @@ class MinesweeperButton extends AppCompatButton {
         return isRevealed;
     }
 
-    public void setRevealed(boolean isRevealed){
-        this.isRevealed = isRevealed;
+    public void setRevealed(int num){
+        this.isRevealed = true;
+        if(num > 0) {
+            setText(num + "");
+        }
+        setBackgroundColor(Color.WHITE);
     }
 
     public boolean isFlagged() {

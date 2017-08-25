@@ -45,16 +45,9 @@ class FieldAdapter extends BaseAdapter {
         int y = position / size;
         int x = position % size;
 
-        boolean isMine = mineMap[x][y];
-
         MinesweeperButton btn = new MinesweeperButton(ctx, x, y, mineMap[x][y]);
 
         btn.setLayoutParams(new GridView.LayoutParams(100,100));
-
-        //btn.setPadding(0,0,0,0);
-        //btn.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,0,0);
-        //btn.setPaddingRelative(0,0,0,0);
-        btn.setText(isMine ? "*" : "");
 
         btn.setOnClickListener(clickListener);
         btn.setOnLongClickListener(longClickListener);

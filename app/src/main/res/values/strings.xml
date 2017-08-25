@@ -1,6 +1,19 @@
 <resources>
     <string name="app_name">MobileOne</string>
+    <string name="app_title">MinesSweeper</string>
+    <string name="difficulties_prompt">Select difficulty</string>
+    <string name="game_over_text">Game over</string>
+    <string name="play_cta">Play</string>
+    <string name="extra_key_level">level</string>
+    <string name="extra_key_time">time</string>
+    <string name="extra_key_is_won">isWon</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="you_win_text">You win</string>
+    <string name="you_loose_text">You loose</string>
+
+    <string-array name="difficulties">
+        <item>Easy</item>
+        <item>Medium</item>
+        <item>Hard</item>
+    </string-array>
 </resources>

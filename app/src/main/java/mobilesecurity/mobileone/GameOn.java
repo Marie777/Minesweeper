@@ -1,6 +1,8 @@
 package mobilesecurity.mobileone;
 
 import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -25,19 +27,19 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
     private FieldAdapter fieldAdapter;
     private GridView gridView;
 
+    private boolean isFinished = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_game_on);
 
-        //gridView = (GridView)findViewById(R.id.grid);
-
         LinearLayout mainLayout = (LinearLayout) findViewById(R.id.ll);
         gridView = new GridView(this);
         gridView.setGravity(Gravity.CENTER);
-
-
+        gridView.setBackgroundColor(Color.WHITE);
+        gridView.setPadding(0,0,0,0);
 
         level = this.getIntent().getIntExtra("level", 0);
 
@@ -65,8 +67,14 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
         boolean[][] mineMap = new boolean[n][n];
 
         for(int i = 0; i < numberOfMines; i++) {
-            int x = (int)Math.floor((Math.random() * n));
-            int y = (int)Math.floor((Math.random() * n));
+            int x;
+            int y;
+
+            do {
+                x = (int)Math.floor((Math.random() * n));
+                y = (int)Math.floor((Math.random() * n));
+            } while(mineMap[x][y]);
+
             mineMap[x][y] = true;
         }
 
@@ -76,7 +84,6 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
         TextView timer = (TextView) findViewById(R.id.timer);
 
         timerThread = new TimerThread(this, timer, 0);
-        timerThread.start();
     }
 
     @Override
@@ -138,9 +145,20 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
 
     private void reveal(MinesweeperButton minesweeperButton) {
 
+        if(!timerThread.isAlive()) {
+            timerThread.start();
+        }
+
+        if(isFinished) {
+            return;
+        }
+
         if(minesweeperButton.isMine()) {
             Toast.makeText(this, "Game Over", Toast.LENGTH_SHORT).show();
-            endGameIntent(false, timerThread.getCurrentTime());
+            minesweeperButton.setText("*");
+            minesweeperButton.setTextColor(Color.RED);
+            waitAndEndGame(false);
+
             return;
         }
 
@@ -150,34 +168,42 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
 
             if(isWin()) {
                 Toast.makeText(this, "You won!", Toast.LENGTH_SHORT).show();
-                timerThread.setFinished(true);
-                endGameIntent(true, timerThread.getCurrentTime());
+                waitAndEndGame(true);
             }
         }
     }
 
-    private void endGameIntent(boolean isWin, int time){
-        Intent intent = new Intent(this,GameOver.class);
-        intent.putExtra("isWin", isWin);
-        intent.putExtra("level", level);
-        intent.putExtra("time", time);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY| Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-        startActivity(intent);
+    private void waitAndEndGame(final boolean isWin) {
+        timerThread.setFinished(true);
+        isFinished = true;
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {}
+            runOnUiThread(() -> endGameIntent(isWin, timerThread.getCurrentTime()));
+        }).start();
     }
 
+    private void endGameIntent(boolean isWin, int time){
+        Resources res = getResources();
+        Intent intent = new Intent(this,GameOver.class);
+        intent.putExtra(res.getString(R.string.extra_key_is_won), isWin);
+        intent.putExtra(res.getString(R.string.extra_key_level), level);
+        intent.putExtra(res.getString(R.string.extra_key_time), time);
 
+        startActivity(intent);
+    }
 
     private void bfsReveal(MinesweeperButton minesweeperButton){
 
         if(!minesweeperButton.isRevealed() && !minesweeperButton.isFlagged()){
             int countM = getMineCount(minesweeperButton);
-            minesweeperButton.setText(String.valueOf(countM));
-            minesweeperButton.setRevealed(true);
+            minesweeperButton.setRevealed(countM);
             if(countM==0){
                 List<MinesweeperButton> adjButtons = getAdj(minesweeperButton);
-                for (MinesweeperButton btn: adjButtons) {
-                    bfsReveal(btn);
-                }
+
+                adjButtons.forEach(this::bfsReveal);
             }
         }
     }
