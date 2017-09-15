@@ -2,9 +2,10 @@ package mobilesecurity.mobileone;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.support.design.widget.TabLayout;
-
+import android.location.Address;
+import android.location.Geocoder;
 import android.os.Bundle;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -16,15 +17,20 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Records extends AppCompatActivity {
 
@@ -120,6 +126,7 @@ public class Records extends AppCompatActivity {
             @SuppressWarnings("unchecked")
             final ArrayList<Record> records = (ArrayList<Record>) getArguments().getSerializable(ARG_RECORDS);
 
+            assert records != null;
             for (Record rec : records) {
                 Log.d("TEST", rec.getName());
             }
@@ -157,13 +164,53 @@ public class Records extends AppCompatActivity {
                     fragmentTransaction.add(R.id.mapLayout, mapFragment);
                     fragmentTransaction.commit();
 
+                    final Geocoder geocoder = new Geocoder(getContext());
+
                     mapFragment.getMapAsync(googleMap -> {
                         for (Record rec : records) {
+                            String address;
+                            try {
+                                List<Address> addresses = geocoder.getFromLocation(rec.getLat(), rec.getLon(), 1);
+                                address = String.format("%s, %s", addresses.get(0).getAddressLine(0), addresses.get(0).getCountryName());
+                            } catch (Exception e) {
+                                address = "Not available";
+                            }
+
                             MarkerOptions mo = new MarkerOptions();
                             LatLng latLng = new LatLng(rec.getLat(), rec.getLon());
-                            mo.position(latLng);
+                            mo
+                                    .position(latLng)
+                                    .title("Name: " + rec.getName())
+                                    .snippet(
+                                            "Date: " + rec.getDate() +
+                                            "\nTime: " + rec.getTime() +
+                                            "\nAddress: "+ address);
                             googleMap.addMarker(mo);
                         }
+
+                        googleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+                            @Override
+                            public View getInfoWindow(Marker marker) {
+                                return null;
+                            }
+
+                            @Override
+                            public View getInfoContents(Marker marker) {
+                                LinearLayout l = new LinearLayout(getContext());
+                                l.setOrientation(LinearLayout.VERTICAL);
+
+                                TextView title = new TextView(getContext());
+                                title.setText(marker.getTitle());
+
+                                TextView snippet = new TextView(getContext());
+                                snippet.setText(marker.getSnippet());
+
+                                l.addView(title);
+                                l.addView(snippet);
+
+                                return l;
+                            }
+                        });
                     });
 
                     return fragmentView;
