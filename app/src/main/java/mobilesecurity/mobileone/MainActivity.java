@@ -2,11 +2,17 @@ package mobilesecurity.mobileone;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Spinner;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     Spinner spinner;
@@ -15,6 +21,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         spinner = (Spinner) findViewById(R.id.diffSpinner);
 
         Button playButton = (Button) findViewById(R.id.playBtn);
@@ -28,6 +35,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int lastLevel = prefs.getInt("level", 0);
 
         spinner.setSelection(lastLevel);
+
+        RecordDbHelper mDbHelper = new RecordDbHelper(getApplicationContext());
+        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+        String[] projection = {
+                RecordsContract.RecordEntry.COLUMN_NAME_NAME,
+                RecordsContract.RecordEntry.COLUMN_NAME_DATE,
+                RecordsContract.RecordEntry.COLUMN_NAME_TIME,
+        };
+
+        String sortOrder = RecordsContract.RecordEntry.COLUMN_NAME_TIME + " DESC";
+
+        Cursor cur = db.query(RecordsContract.RecordEntry.TABLE_NAME, projection, null, null, null, null, sortOrder);
+
+        //List<String> items = new ArrayList<>();
+
+        for(int i = 0; i < 10 && cur.moveToNext(); i++) {
+            //items.add(cur.getString(0) + " " + cur.getString(1) + " " + cur.getInt(2));
+            Log.d("TEST",
+                    cur.getString(cur.getColumnIndexOrThrow(RecordsContract.RecordEntry.COLUMN_NAME_NAME)) + " " +
+                    cur.getString(cur.getColumnIndexOrThrow(RecordsContract.RecordEntry.COLUMN_NAME_DATE)) + " " +
+                    cur.getInt(cur.getColumnIndexOrThrow(RecordsContract.RecordEntry.COLUMN_NAME_TIME)));
+        }
+        cur.close();
+        mDbHelper.close();
     }
 
     public void startGame(int level) {

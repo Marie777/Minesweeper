@@ -1,6 +1,8 @@
 package mobilesecurity.mobileone;
 
+import android.content.ContentValues;
 import android.content.res.Resources;
+import android.database.sqlite.SQLiteDatabase;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
@@ -8,7 +10,6 @@ import android.widget.TextView;
 import java.util.Locale;
 
 public class GameOver extends AppCompatActivity {
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,5 +36,22 @@ public class GameOver extends AppCompatActivity {
         tvResult.setText(resultText);
         tvTime.setText(timeText);
         tvLevel.setText(levelText);
+
+        if(isWon) {
+            RecordDbHelper mDbHelper = new RecordDbHelper(getApplicationContext());
+            SQLiteDatabase db = mDbHelper.getWritableDatabase();
+
+            ContentValues values = new ContentValues();
+            values.put(RecordsContract.RecordEntry.COLUMN_NAME_NAME, "Test");
+            values.put(RecordsContract.RecordEntry.COLUMN_NAME_DATE, "Now");
+            values.put(RecordsContract.RecordEntry.COLUMN_NAME_TIME, time);
+            values.put(RecordsContract.RecordEntry.COLUMN_NAME_GPS_ALT, 0.0);
+            values.put(RecordsContract.RecordEntry.COLUMN_NAME_GPS_LONG, 0.0);
+            values.put(RecordsContract.RecordEntry.COLUMN_NAME_GPS_LAT, 0.0);
+
+            db.insert(RecordsContract.RecordEntry.TABLE_NAME, null, values);
+
+            mDbHelper.close();
+        }
     }
 }
