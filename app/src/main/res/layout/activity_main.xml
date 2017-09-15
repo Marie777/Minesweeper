@@ -27,10 +27,16 @@
         android:spinnerMode="dropdown" />
 
     <Button
-        android:id="@+id/playBtn"
+    android:id="@+id/playBtn"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="@string/play_cta" />
+
+    <Button
+        android:id="@+id/recordsBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/play_cta" />
+        android:text="Records" />
 
 
 </LinearLayout>

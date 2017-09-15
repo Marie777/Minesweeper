@@ -87,6 +87,11 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
         timerThread.setFinished(true);
@@ -113,16 +118,11 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
         int minY = y > 0 ? y - 1 : y;
         int maxY = y < n - 1 ? y + 1 : y;
 
-        Log.d(TAG, "minX " + minX + " maxX " + maxX);
-        Log.d(TAG, "minY " + minY + " maxY " + maxY);
-
         for(int i = minX; i <= maxX; i++) {
             for(int j = minY; j <= maxY; j++) {
                 adjButtons.add((MinesweeperButton) fieldAdapter.getItem(i + j * n));
             }
         }
-
-        Log.d(TAG, "List size " + adjButtons.size());
 
         return adjButtons;
     }
@@ -203,7 +203,9 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
             if(countM==0){
                 List<MinesweeperButton> adjButtons = getAdj(minesweeperButton);
 
-                adjButtons.forEach(this::bfsReveal);
+                for (MinesweeperButton btn : adjButtons) {
+                    this.bfsReveal(btn);
+                }
             }
         }
     }
@@ -230,6 +232,8 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
                 revealedCount++;
             }
         }
+
+        Log.d("ISWIN", "Revealed count: " + revealedCount);
 
         return n * n - numberOfMines == revealedCount;
     }
