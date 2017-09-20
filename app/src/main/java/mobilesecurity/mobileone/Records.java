@@ -66,7 +66,7 @@ public class Records extends AppCompatActivity {
                 RecordsContract.RecordEntry.COLUMN_NAME_GPS_LAT,
         };
 
-        String sortOrder = RecordsContract.RecordEntry.COLUMN_NAME_TIME + " DESC";
+        String sortOrder = RecordsContract.RecordEntry.COLUMN_NAME_TIME + " ASC";
 
         Cursor cur = db.query(RecordsContract.RecordEntry.TABLE_NAME, projection, null, null, null, null, sortOrder);
 
@@ -164,15 +164,15 @@ public class Records extends AppCompatActivity {
                     fragmentTransaction.add(R.id.mapLayout, mapFragment);
                     fragmentTransaction.commit();
 
-                    final Geocoder geocoder = new Geocoder(getContext());
-
                     mapFragment.getMapAsync(googleMap -> {
+                        Geocoder geocoder = new Geocoder(getContext());
                         for (Record rec : records) {
                             String address;
                             try {
                                 List<Address> addresses = geocoder.getFromLocation(rec.getLat(), rec.getLon(), 1);
                                 address = String.format("%s, %s", addresses.get(0).getAddressLine(0), addresses.get(0).getCountryName());
                             } catch (Exception e) {
+                                e.printStackTrace();
                                 address = "Not available";
                             }
 

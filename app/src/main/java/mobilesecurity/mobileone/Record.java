@@ -1,6 +1,8 @@
 package mobilesecurity.mobileone;
 
-public class Record {
+import java.io.Serializable;
+
+class Record implements Serializable {
     private String name;
     private String date;
     private int time;

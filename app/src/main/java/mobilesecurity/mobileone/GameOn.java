@@ -1,14 +1,14 @@
 package mobilesecurity.mobileone;
 
-import android.Manifest;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -27,6 +27,8 @@ import java.util.List;
 public class GameOn extends AppCompatActivity implements View.OnClickListener, View.OnLongClickListener {
     private static final String TAG = "btn";
 
+    public static final int MY_GPS_PERMISSION = 0;
+
     private int n = 10;
     private int numberOfMines = 0;
     private int level;
@@ -34,12 +36,12 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
     private TimerThread timerThread;
     private FieldAdapter fieldAdapter;
     private GridView gridView;
-    public static final int MY_GPS_PERMISSION = 0;
-    private LocationListener ls;
-    private LocationManager lm;
-    public Location location;
+
+    public MyLocationService myLocationService;
 
     private boolean isFinished = false;
+
+    public float[] initialTilt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,54 +97,23 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
         TextView timer = (TextView) findViewById(R.id.timer);
 
         timerThread = new TimerThread(this, timer, 0);
-
-
-        ls = new LocationListener() {
-
-            @Override
-            public void onLocationChanged(Location location) {
-                GameOn.this.location = location;
-            }
-
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-
-            }
-
-            @Override
-            public void onProviderEnabled(String provider) {
-
-            }
-
-            @Override
-            public void onProviderDisabled(String provider) {
-
-            }
-        };
-
-        lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{ android.Manifest.permission.ACCESS_FINE_LOCATION },
-                    MY_GPS_PERMISSION);
-        } else {
-            startGPSLog();
-        }
-
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        Intent intent = new Intent(this, TiltService.class);
+        bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "onCreate: after bind service");
+
+        Intent locationIntent = new Intent(this, MyLocationService.class);
+        bindService(locationIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        unbindService(mServiceConnection);
         timerThread.setFinished(true);
     }
 
@@ -156,24 +127,6 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
             }
         }
     }
-
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode){
-            case MY_GPS_PERMISSION:
-                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    startGPSLog();
-                }
-        }
-    }
-
-
-    private void startGPSLog() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED)
-            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, ls);
-    }
-
 
     private List<MinesweeperButton> getAdj(MinesweeperButton minesweeperButton){
         int x = minesweeperButton.getMyX();
@@ -240,6 +193,10 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
         }
     }
 
+    public void unReveal(){
+
+    }
+
     private void waitAndEndGame(final boolean isWin) {
         timerThread.setFinished(true);
         isFinished = true;
@@ -254,10 +211,25 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
 
     private void endGameIntent(boolean isWin, int time){
         Resources res = getResources();
-        Intent intent = new Intent(this,GameOver.class);
+        Intent intent = new Intent(this, GameOver.class);
         intent.putExtra(res.getString(R.string.extra_key_is_won), isWin);
         intent.putExtra(res.getString(R.string.extra_key_level), level);
         intent.putExtra(res.getString(R.string.extra_key_time), time);
+
+        Location location = null;
+
+        if(myLocationService != null) {
+            location = myLocationService.getCurrentLocation();
+        }
+
+        if (location != null) {
+            intent.putExtra(res.getString(R.string.extra_key_lng), location.getLongitude());
+            intent.putExtra(res.getString(R.string.extra_key_lat), location.getLatitude());
+        } else {
+            intent.putExtra(res.getString(R.string.extra_key_lng), 0.0);
+            intent.putExtra(res.getString(R.string.extra_key_lat), 0.0);
+        }
+
 
         startActivity(intent);
     }
@@ -303,5 +275,46 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
         Log.d("ISWIN", "Revealed count: " + revealedCount);
 
         return n * n - numberOfMines == revealedCount;
+    }
+
+    private ServiceConnection mServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            if(service instanceof TiltService.TiltBinder) {
+                TiltService.TiltBinder binder = (TiltService.TiltBinder) service;
+                binder.getService().setResetListener(GameOn.this);
+            } else if (service instanceof MyLocationService.MyLocationBinder){
+                MyLocationService.MyLocationBinder binder = (MyLocationService.MyLocationBinder) service;
+                myLocationService = binder.getService();
+
+                Log.d(TAG, "onServiceConnected: MyLocationService");
+
+                requestGPSPermission();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
+
+    private void requestGPSPermission() {
+        ActivityCompat.requestPermissions(
+                this,
+                new String[]{ android.Manifest.permission.ACCESS_FINE_LOCATION },
+                MY_GPS_PERMISSION);
+    }
+
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode){
+            case MY_GPS_PERMISSION:
+                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    if(myLocationService != null) {
+                        myLocationService.startUpdating();
+                    }
+                }
+        }
     }
 }
