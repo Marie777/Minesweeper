@@ -36,34 +36,48 @@ class FieldAdapter extends BaseAdapter implements Observer {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        Cell btn;
+        Cell cell;
 
         if(convertView == null) {
-            btn = new Cell(mContext);
+            cell = new Cell(mContext);
         } else {
-            btn = (Cell) convertView;
-            btn.reset();
+            cell = (Cell) convertView;
+            cell.reset();
         }
         int x = position % mModel.getSize();
         int y = position / mModel.getSize();
 
         if(mModel.isRevealed(x, y)) {
             if(mModel.isMine(x, y)) {
-                btn.setMine();
+                cell.setMine();
             } else {
-                btn.setRevealed(mModel.getMineCount(x, y));
+                cell.setRevealed(mModel.getMineCount(x, y));
             }
         } else {
             if(mModel.isFlagged(x, y)) {
-                btn.setFlag();
+                cell.setFlag();
             } else {
-                btn.unSetFlag();
+                cell.unSetFlag();
             }
         }
 
         if(mModel.isFinished()) {
             if(mModel.isWin()) {
-
+                cell
+                        .animate()
+                        .scaleY(2)
+                        .scaleX(2)
+                        .setDuration(500)
+                        .withEndAction(() ->
+                                cell
+                                        .animate()
+                                        .rotation(360)
+                                        .setDuration(1000)
+                                        .withEndAction(() -> cell
+                                                .animate()
+                                                .scaleX(1)
+                                                .scaleY(1)
+                                                .setDuration(500)));
             } else {
                 if(!mModel.isMine(x, y) || !mModel.isRevealed(x, y)) {
 
@@ -75,17 +89,17 @@ class FieldAdapter extends BaseAdapter implements Observer {
                     flyX = flyX / norm;
                     flyY = flyY / norm;
 
-                    btn .animate()
+                    cell .animate()
                         .x(Math.round(flyX * 2000))
                         .y(Math.round(flyY * 2000))
                         .setDuration(Math.round(norm * 1000));
                 } else {
-                    btn.animate().scaleX(5).scaleY(5).alpha(0);
+                    cell.animate().scaleX(5).scaleY(5).alpha(0);
                 }
             }
         }
 
-        return btn;
+        return cell;
     }
 
     @Override
