@@ -1,7 +1,5 @@
 package mobilesecurity.mobileone;
 
-import android.util.Log;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
@@ -40,7 +38,7 @@ class GameModel extends Observable {
         return size;
     }
 
-    public int getNumOfMines() {
+    int getNumOfMines() {
         return numOfMines;
     }
 
@@ -52,8 +50,6 @@ class GameModel extends Observable {
 
             numOfMines++;
         }
-
-        Log.d("MODEL", "setMine: x: " + x + " y: " + y);
 
         minesMap[x][y] = isMine;
         setChanged();
@@ -123,19 +119,19 @@ class GameModel extends Observable {
         return revealedCount >= size * size - numOfMines;
     }
 
-    void setExplodedX(int explodedX) {
-        this.explodedX = explodedX;
-    }
-
-    void setExplodedY(int explodedY) {
-        this.explodedY = explodedY;
-    }
-
     int getExplodedX() {
         return explodedX;
     }
 
+    void setExplodedX(int explodedX) {
+        this.explodedX = explodedX;
+    }
+
     int getExplodedY() {
         return explodedY;
+    }
+
+    void setExplodedY(int explodedY) {
+        this.explodedY = explodedY;
     }
 }

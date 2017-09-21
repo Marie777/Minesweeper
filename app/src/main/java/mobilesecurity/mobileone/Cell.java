@@ -2,7 +2,6 @@ package mobilesecurity.mobileone;
 
 import android.content.Context;
 import android.support.v7.widget.AppCompatImageView;
-import android.util.Log;
 import android.widget.GridView;
 
 import java.util.HashMap;
@@ -44,7 +43,6 @@ public class Cell extends AppCompatImageView {
     }
 
     public void setMine(){
-        Log.d("Cell", "setMine");
         setImageResource(R.drawable.explosion);
     }
 }

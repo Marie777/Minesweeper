@@ -11,11 +11,8 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.ActivityCompat;
-import android.util.Log;
 
 public class MyLocationService extends Service implements LocationListener {
-    private static final String TAG = "MyLocationService";
-
     Location currentLocation;
     LocationManager lm;
     MyLocationBinder binder;
@@ -61,12 +58,10 @@ public class MyLocationService extends Service implements LocationListener {
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-        Log.d(TAG, "onProviderDisabled: " + provider + " status changed: " + status);
     }
 
     @Override
     public void onProviderEnabled(String provider) {
-        Log.d(TAG, "onProviderDisabled: " + provider + " enabled");
         switch (provider) {
             case LocationManager.GPS_PROVIDER:
                 startUpdating();
@@ -75,7 +70,6 @@ public class MyLocationService extends Service implements LocationListener {
 
     @Override
     public void onProviderDisabled(String provider) {
-        Log.d(TAG, "onProviderDisabled: " + provider + " disabled");
     }
     // END LocationListener
 

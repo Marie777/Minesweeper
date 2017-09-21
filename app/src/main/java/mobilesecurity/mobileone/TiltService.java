@@ -10,7 +10,6 @@ import android.hardware.SensorManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 public class TiltService extends Service implements SensorEventListener {
 
@@ -21,23 +20,20 @@ public class TiltService extends Service implements SensorEventListener {
     private final IBinder mBinder = new TiltBinder();
     private GameOn mGame;
     private SensorManager mSensorManager;
-    private Sensor mSensor;
 
     private long tiltedTime = 0;
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d("SENSOR", "Tilt service bound");
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-        mSensorManager.registerListener(this, mSensor, SENSOR_DELAY);
+        Sensor sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        mSensorManager.registerListener(this, sensor, SENSOR_DELAY);
         return mBinder;
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.d("SENSOR", "Tilt service unbound");
         mSensorManager.unregisterListener(this);
         return true;
     }
@@ -65,14 +61,14 @@ public class TiltService extends Service implements SensorEventListener {
 
     }
 
+    public void setResetListener(GameOn game) {
+        mGame = game;
+    }
+
     class TiltBinder extends Binder {
         TiltService getService() {
             // Return this instance of LocalService so clients can call public methods
             return TiltService.this;
         }
-    }
-
-    public void setResetListener(GameOn game) {
-        mGame = game;
     }
 }

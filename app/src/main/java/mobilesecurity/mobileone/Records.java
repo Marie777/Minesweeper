@@ -13,7 +13,6 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,7 +27,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -127,9 +125,6 @@ public class Records extends AppCompatActivity {
             final ArrayList<Record> records = (ArrayList<Record>) getArguments().getSerializable(ARG_RECORDS);
 
             assert records != null;
-            for (Record rec : records) {
-                Log.d("TEST", rec.getName());
-            }
             switch (selectedTab) {
                 case 1:
                     fragmentView = inflater.inflate(R.layout.fragment_records_table, container, false);

@@ -8,12 +8,11 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.location.Location;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.AdapterView;
@@ -25,17 +24,34 @@ import java.util.Observable;
 import java.util.Observer;
 
 public class GameOn extends AppCompatActivity implements AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener, Observer {
-    private static final String TAG = "GameOn";
 
     public static final int MY_GPS_PERMISSION = 0;
+    public float[] initialTilt;
     private int level;
-
     private TimerThread timerThread;
     private MyLocationService myLocationService;
-    public float[] initialTilt;
-
     private GameModel mModel;
     private GameController mController;
+    private ServiceConnection mServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            if (service instanceof TiltService.TiltBinder) {
+                TiltService.TiltBinder binder = (TiltService.TiltBinder) service;
+                binder.getService().setResetListener(GameOn.this);
+            } else if (service instanceof MyLocationService.MyLocationBinder) {
+                MyLocationService.MyLocationBinder binder = (MyLocationService.MyLocationBinder) service;
+                myLocationService = binder.getService();
+
+
+                requestGPSPermission();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,28 +155,6 @@ public class GameOn extends AppCompatActivity implements AdapterView.OnItemClick
 
         startActivity(intent);
     }
-
-    private ServiceConnection mServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            if(service instanceof TiltService.TiltBinder) {
-                TiltService.TiltBinder binder = (TiltService.TiltBinder) service;
-                binder.getService().setResetListener(GameOn.this);
-            } else if (service instanceof MyLocationService.MyLocationBinder){
-                MyLocationService.MyLocationBinder binder = (MyLocationService.MyLocationBinder) service;
-                myLocationService = binder.getService();
-
-                Log.d(TAG, "onServiceConnected: MyLocationService");
-
-                requestGPSPermission();
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-
-        }
-    };
 
     private void requestGPSPermission() {
         ActivityCompat.requestPermissions(
