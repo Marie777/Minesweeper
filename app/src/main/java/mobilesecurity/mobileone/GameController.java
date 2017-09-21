@@ -11,7 +11,7 @@ class GameController {
         addRandomMines(numOfMines);
     }
 
-    void addRandomMines(int numberOfMines) {
+    private void addRandomMines(int numberOfMines) {
         if(model.getNumOfMines() >= model.getSize() * model.getSize()) {
             return;
         }
@@ -27,8 +27,6 @@ class GameController {
 
             model.setMine(x, y, true);
         }
-
-        model.notifyObservers();
     }
 
     void reveal(int x, int y) {
@@ -39,6 +37,8 @@ class GameController {
         if(model.isMine(x, y)) {
             model.setRevealed(x, y, true);
             model.setFinished(true);
+            model.setExplodedX(x);
+            model.setExplodedY(y);
         }
 
         revealBFS(x, y);
@@ -51,6 +51,10 @@ class GameController {
     }
 
     void toggleFlag(int x, int y) {
+        if(model.isFinished()) {
+            return;
+        }
+
         model.setFlagged(x, y, !model.isFlagged(x, y));
         model.notifyObservers();
     }
@@ -69,5 +73,8 @@ class GameController {
     public void reset() {
         model.reset();
         addRandomMines(1);
+
+        model.notifyObservers();
+
     }
 }

@@ -109,7 +109,7 @@ public class GameOn extends AppCompatActivity implements AdapterView.OnItemClick
 
         new Thread(() -> {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(3000);
             } catch (InterruptedException ignored) {}
             runOnUiThread(() -> endGameIntent(isWin, timerThread.getCurrentTime()));
         }).start();

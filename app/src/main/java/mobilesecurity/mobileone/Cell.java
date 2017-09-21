@@ -45,6 +45,6 @@ public class Cell extends AppCompatImageView {
 
     public void setMine(){
         Log.d("Cell", "setMine");
-        setImageResource(R.drawable.mine);
+        setImageResource(R.drawable.explosion);
     }
 }

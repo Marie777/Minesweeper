@@ -11,6 +11,8 @@ class GameModel extends Observable {
     private int numOfMines = 0;
     private int size;
     private int revealedCount = 0;
+    private int explodedX;
+    private int explodedY;
 
     private boolean[][] minesMap;
     private boolean[][] revealedMap;
@@ -119,5 +121,21 @@ class GameModel extends Observable {
 
     boolean isWin() {
         return revealedCount >= size * size - numOfMines;
+    }
+
+    void setExplodedX(int explodedX) {
+        this.explodedX = explodedX;
+    }
+
+    void setExplodedY(int explodedY) {
+        this.explodedY = explodedY;
+    }
+
+    int getExplodedX() {
+        return explodedX;
+    }
+
+    int getExplodedY() {
+        return explodedY;
     }
 }

@@ -61,6 +61,30 @@ class FieldAdapter extends BaseAdapter implements Observer {
             }
         }
 
+        if(mModel.isFinished()) {
+            if(mModel.isWin()) {
+
+            } else {
+                if(!mModel.isMine(x, y) || !mModel.isRevealed(x, y)) {
+
+                    double flyX = x - mModel.getExplodedX();
+                    double flyY = y - mModel.getExplodedY();
+
+                    double norm = Math.sqrt(flyX * flyX + flyY * flyY);
+
+                    flyX = flyX / norm;
+                    flyY = flyY / norm;
+
+                    btn .animate()
+                        .x(Math.round(flyX * 2000))
+                        .y(Math.round(flyY * 2000))
+                        .setDuration(Math.round(norm * 1000));
+                } else {
+                    btn.animate().scaleX(5).scaleY(5).alpha(0);
+                }
+            }
+        }
+
         return btn;
     }
 
