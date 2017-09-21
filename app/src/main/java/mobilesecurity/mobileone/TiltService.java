@@ -16,7 +16,7 @@ public class TiltService extends Service implements SensorEventListener {
 
     private static final int SENSOR_DELAY = 50000;
     private static final float TILT_THRESHOLD = 0.1f;
-    private static final float TIMESTAMP_THRESHOLD = 1000000;
+    private static final long TIMESTAMP_THRESHOLD = 5000000000L;
 
     private final IBinder mBinder = new TiltBinder();
     private GameOn mGame;
@@ -44,9 +44,6 @@ public class TiltService extends Service implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-
-
-       // Log.d("SENSOR", "onSensorChanged: " + event.values[0] + " " + event.values[1] + " " + event.values[2] + " " + event.values[3]);
         if(mGame != null) {
             if(mGame.initialTilt == null) {
                 mGame.initialTilt = event.values.clone();
@@ -54,7 +51,8 @@ public class TiltService extends Service implements SensorEventListener {
 
             if(Math.abs(event.values[3] - mGame.initialTilt[3]) >= TILT_THRESHOLD){
                 if( event.timestamp - tiltedTime > TIMESTAMP_THRESHOLD) {
-                    Log.d("SENSOR", "RESTART GAME");
+                    mGame.resetGame();
+                    tiltedTime = event.timestamp;
                 }
             } else {
                 tiltedTime = event.timestamp;

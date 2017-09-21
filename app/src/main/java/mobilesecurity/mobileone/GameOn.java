@@ -16,32 +16,26 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
 
-public class GameOn extends AppCompatActivity implements View.OnClickListener, View.OnLongClickListener {
-    private static final String TAG = "btn";
+public class GameOn extends AppCompatActivity implements AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener, Observer {
+    private static final String TAG = "GameOn";
 
     public static final int MY_GPS_PERMISSION = 0;
-
-    private int n = 10;
-    private int numberOfMines = 0;
     private int level;
 
     private TimerThread timerThread;
-    private FieldAdapter fieldAdapter;
-    private GridView gridView;
-
-    public MyLocationService myLocationService;
-
-    private boolean isFinished = false;
-
+    private MyLocationService myLocationService;
     public float[] initialTilt;
+
+    private GameModel mModel;
+    private GameController mController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,14 +43,21 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
         setContentView(R.layout.activity_game_on);
 
         LinearLayout mainLayout = (LinearLayout) findViewById(R.id.ll);
-        gridView = new GridView(this);
+        TextView timer = (TextView) findViewById(R.id.timer);
+
+        int n;
+        int numberOfMines;
+
+        GridView gridView = new GridView(this);
         gridView.setGravity(Gravity.CENTER);
         gridView.setBackgroundColor(Color.WHITE);
-        gridView.setPadding(0,0,0,0);
+        gridView.setPadding(0, 0, 0, 0);
+        mainLayout.addView(gridView, 0);
 
         level = this.getIntent().getIntExtra("level", 0);
 
         switch (level) {
+            default:
             case 0:
                 n = 10;
                 numberOfMines = 5;
@@ -68,35 +69,22 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
             case 2:
                 n = 5;
                 numberOfMines = 10;
-                gridView.setLayoutParams(new GridView.LayoutParams(n*100,n*100));
+                gridView.setLayoutParams(new GridView.LayoutParams(n * 100, n * 100));
                 break;
         }
-
-        mainLayout.addView(gridView,0);
-
-
         gridView.setNumColumns(n);
 
-        boolean[][] mineMap = new boolean[n][n];
+        mModel = new GameModel(n);
+        mModel.addObserver(this);
+        mController = new GameController(mModel, numberOfMines);
 
-        for(int i = 0; i < numberOfMines; i++) {
-            int x;
-            int y;
-
-            do {
-                x = (int)Math.floor((Math.random() * n));
-                y = (int)Math.floor((Math.random() * n));
-            } while(mineMap[x][y]);
-
-            mineMap[x][y] = true;
-        }
-
-        fieldAdapter = new FieldAdapter(this, n, this, this, mineMap);
+        FieldAdapter fieldAdapter = new FieldAdapter(this, mModel);
 
         gridView.setAdapter(fieldAdapter);
-        TextView timer = (TextView) findViewById(R.id.timer);
-
         timerThread = new TimerThread(this, timer, 0);
+
+        gridView.setOnItemClickListener(this);
+        gridView.setOnItemLongClickListener(this);
     }
 
     @Override
@@ -104,7 +92,6 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
         super.onResume();
         Intent intent = new Intent(this, TiltService.class);
         bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-        Log.d(TAG, "onCreate: after bind service");
 
         Intent locationIntent = new Intent(this, MyLocationService.class);
         bindService(locationIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
@@ -117,89 +104,8 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
         timerThread.setFinished(true);
     }
 
-    @Override
-    public void onClick(View v) {
-        if(v instanceof MinesweeperButton) {
-            MinesweeperButton minesweeperButton = (MinesweeperButton) v;
-
-            if(!minesweeperButton.isFlagged()) {
-                reveal(minesweeperButton);
-            }
-        }
-    }
-
-    private List<MinesweeperButton> getAdj(MinesweeperButton minesweeperButton){
-        int x = minesweeperButton.getMyX();
-        int y = minesweeperButton.getMyY();
-
-        List<MinesweeperButton> adjButtons = new ArrayList<>();
-        int minX = x > 0 ? x - 1 : x;
-        int maxX = x < n - 1 ? x + 1 : x;
-        int minY = y > 0 ? y - 1 : y;
-        int maxY = y < n - 1 ? y + 1 : y;
-
-        for(int i = minX; i <= maxX; i++) {
-            for(int j = minY; j <= maxY; j++) {
-                adjButtons.add((MinesweeperButton) fieldAdapter.getItem(i + j * n));
-            }
-        }
-
-        return adjButtons;
-    }
-
-    private int getMineCount(MinesweeperButton minesweeperButton) {
-        int number = 0;
-
-        List<MinesweeperButton> adjButtons = getAdj(minesweeperButton);
-
-        for(MinesweeperButton adjBtn : adjButtons) {
-            if(adjBtn != null) {
-                if(adjBtn.isMine()) {
-                    number++;
-                }
-            }
-        }
-
-        return number;
-    }
-
-    private void reveal(MinesweeperButton minesweeperButton) {
-
-        if(!timerThread.isAlive()) {
-            timerThread.start();
-        }
-
-        if(isFinished) {
-            return;
-        }
-
-        if(minesweeperButton.isMine()) {
-            Toast.makeText(this, "Game Over", Toast.LENGTH_SHORT).show();
-            minesweeperButton.setText("*");
-            minesweeperButton.setTextColor(Color.RED);
-            waitAndEndGame(false);
-
-            return;
-        }
-
-        if(!minesweeperButton.isFlagged()) {
-            bfsReveal(minesweeperButton);
-            gridView.refreshDrawableState();
-
-            if(isWin()) {
-                Toast.makeText(this, "You won!", Toast.LENGTH_SHORT).show();
-                waitAndEndGame(true);
-            }
-        }
-    }
-
-    public void unReveal(){
-
-    }
-
     private void waitAndEndGame(final boolean isWin) {
         timerThread.setFinished(true);
-        isFinished = true;
 
         new Thread(() -> {
             try {
@@ -232,49 +138,6 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
 
 
         startActivity(intent);
-    }
-
-    private void bfsReveal(MinesweeperButton minesweeperButton){
-
-        if(!minesweeperButton.isRevealed() && !minesweeperButton.isFlagged()){
-            int countM = getMineCount(minesweeperButton);
-            minesweeperButton.setRevealed(countM);
-            if(countM==0){
-                List<MinesweeperButton> adjButtons = getAdj(minesweeperButton);
-
-                for (MinesweeperButton btn : adjButtons) {
-                    this.bfsReveal(btn);
-                }
-            }
-        }
-    }
-
-    @Override
-    public boolean onLongClick(View v) {
-        if(v instanceof MinesweeperButton) {
-            MinesweeperButton minesweeperButton = (MinesweeperButton) v;
-
-            if(!minesweeperButton.isRevealed()) {
-                minesweeperButton.setFlagged(!minesweeperButton.isFlagged());
-            }
-
-            return true;
-        }
-        return false;
-    }
-
-    private boolean isWin() {
-        int revealedCount = 0;
-        for(int i = 0; i < fieldAdapter.getCount(); i++) {
-            MinesweeperButton tile = (MinesweeperButton) fieldAdapter.getItem(i);
-            if(tile.isRevealed()) {
-                revealedCount++;
-            }
-        }
-
-        Log.d("ISWIN", "Revealed count: " + revealedCount);
-
-        return n * n - numberOfMines == revealedCount;
     }
 
     private ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -316,5 +179,37 @@ public class GameOn extends AppCompatActivity implements View.OnClickListener, V
                     }
                 }
         }
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        int x = position % mModel.getSize();
+        int y = position / mModel.getSize();
+
+        if(!timerThread.isAlive()) {
+            timerThread.start();
+        }
+
+        mController.reveal(x, y);
+    }
+
+    @Override
+    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+        int x = position % mModel.getSize();
+        int y = position / mModel.getSize();
+
+        mController.toggleFlag(x, y);
+        return false;
+    }
+
+    @Override
+    public void update(Observable o, Object arg) {
+        if(mModel.isFinished()) {
+            waitAndEndGame(mModel.isWin());
+        }
+    }
+
+    public void resetGame() {
+        mController.reset();
     }
 }
