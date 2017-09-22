@@ -1,11 +1,14 @@
 package mobilesecurity.mobileone;
 
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -31,6 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Records extends AppCompatActivity {
+
+    private static final int MY_GPS_PERMISSION = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +75,7 @@ public class Records extends AppCompatActivity {
 
         ArrayList<Record> items = new ArrayList<>(cur.getCount());
 
-        for(int i = 0; i < 10 && cur.moveToNext(); i++) {
+        for (int i = 0; i < 10 && cur.moveToNext(); i++) {
             Record rec = new Record(
                     cur.getString(cur.getColumnIndexOrThrow(RecordsContract.RecordEntry.COLUMN_NAME_NAME)),
                     cur.getString(cur.getColumnIndexOrThrow(RecordsContract.RecordEntry.COLUMN_NAME_DATE)),
@@ -99,6 +104,8 @@ public class Records extends AppCompatActivity {
         private static final String ARG_SECTION_NUMBER = "section_number";
         private static final String ARG_RECORDS = "records";
 
+        SupportMapFragment mapFragment;
+
         public PlaceholderFragment() {
         }
 
@@ -113,6 +120,26 @@ public class Records extends AppCompatActivity {
             args.putSerializable(ARG_RECORDS, records);
             fragment.setArguments(args);
             return fragment;
+        }
+
+        public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+            switch (requestCode) {
+                case MY_GPS_PERMISSION:
+                    if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                        mapFragment.getMapAsync(googleMap -> {
+                            if (ActivityCompat.checkSelfPermission(
+                                    getContext(),
+                                    android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                    && ActivityCompat.checkSelfPermission(
+                                    getContext(),
+                                    android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                return;
+                            }
+                            googleMap.setMyLocationEnabled(true);
+                        });
+                    }
+            }
         }
 
         @Override
@@ -154,7 +181,7 @@ public class Records extends AppCompatActivity {
                 case 2:
                     fragmentView = inflater.inflate(R.layout.fragment_records_map, container, false);
 
-                    SupportMapFragment mapFragment = SupportMapFragment.newInstance();
+                    mapFragment = SupportMapFragment.newInstance();
                     FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
                     fragmentTransaction.add(R.id.mapLayout, mapFragment);
                     fragmentTransaction.commit();
@@ -178,9 +205,15 @@ public class Records extends AppCompatActivity {
                                     .title("Name: " + rec.getName())
                                     .snippet(
                                             "Date: " + rec.getDate() +
-                                            "\nTime: " + rec.getTime() +
-                                            "\nAddress: "+ address);
+                                                    "\nTime: " + rec.getTime() +
+                                                    "\nAddress: " + address);
                             googleMap.addMarker(mo);
+                        }
+
+                        if (ActivityCompat.checkSelfPermission(getContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, MY_GPS_PERMISSION);
+                        } else {
+                            googleMap.setMyLocationEnabled(true);
                         }
 
                         googleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
